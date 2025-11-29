@@ -1,67 +1,70 @@
-.MODEL SMALL
-.STACK 100h
-.DATA
+data segment
+    msgGreen  db 'GREEN  (Temp < 100 C)$'
+    msgYellow db 'YELLOW (Temp 100-500 C)$'
+    msgRed    db 'RED    (Temp > 500 C)$'
+    newline   db 13,10,'$'
+ends
 
-msgGreen  db 'GREEN  (Temp < 100 C)$'
-msgYellow db 'YELLOW (Temp 100–500 C)$'
-msgRed    db 'RED    (Temp > 500 C)$'
-newline   db 13,10,'$'
+stack segment
+    dw 128 dup(0)
+ends
 
-.CODE
-MAIN PROC
-    mov ax, @data
+code segment
+start:
+    mov ax, data
     mov ds, ax
+    mov es, ax
 
-START:
+main_loop:
     mov ah, 00h
     int 1Ah
     mov ax, dx
     xor dx, dx
-    mov cx, 1000
+    mov cx, 700
     div cx
     mov bx, dx
 
     cmp bx, 100
-    jl  PRINT_GREEN
+    jl print_green
 
     cmp bx, 500
-    jle PRINT_YELLOW
+    jle print_yellow
 
-    jmp PRINT_RED
+    jmp print_red
 
-PRINT_GREEN:
-    mov dx, OFFSET msgGreen
-    jmp PRINT_MSG
+print_green:
+    mov dx, offset msgGreen
+    jmp print_msg
 
-PRINT_YELLOW:
-    mov dx, OFFSET msgYellow
-    jmp PRINT_MSG
+print_yellow:
+    mov dx, offset msgYellow
+    jmp print_msg
 
-PRINT_RED:
-    mov dx, OFFSET msgRed
+print_red:
+    mov dx, offset msgRed
 
-PRINT_MSG:
+print_msg:
     mov ah, 09h
     int 21h
-
-    mov dx, OFFSET newline
+    mov dx, offset newline
     mov ah, 09h
     int 21h
+    call delay1sec
+    jmp main_loop
 
-    CALL DELAY1SEC
-    jmp START
+delay1sec:
+    mov ah, 00h
+    int 1Ah
+    mov bx, dx
 
-MAIN ENDP
-
-DELAY1SEC PROC
-    mov cx, 40h
-outer:
-    mov dx, 0FFFFh
-inner:
-    dec dx
-    jnz inner
-    loop outer
+wait_loop:
+    mov ah, 00h
+    int 1Ah
+    sub dx, bx
+    cmp dx, 18h
+    jb wait_loop
     ret
-DELAY1SEC ENDP
 
-END MAIN
+ends
+
+end start
