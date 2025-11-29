@@ -2,99 +2,66 @@
 .STACK 100h
 .DATA
 
-msgGreen db 'GREEN LED IS TURNED ON$',0
-msgRed   db 'RED LED IS TURNED ON$',0
-line     db '-----------------------------------------------------$',0
-waitMsg  db 'Another Reading in 3 seconds Please Wait...$',0
+msgGreen  db 'GREEN  (Temp < 100 C)$'
+msgYellow db 'YELLOW (Temp 100–500 C)$'
+msgRed    db 'RED    (Temp > 500 C)$'
+newline   db 13,10,'$'
 
 .CODE
 MAIN PROC
     mov ax, @data
     mov ds, ax
 
-    mov bx, 0           ; Init toggle flag
-
 START:
-    xor bx, 1           ; Toggle flag (0 or 1)
-    cmp bx, 1
-    je  SHOW_GREEN
-    jmp SHOW_RED
+    mov ah, 00h
+    int 1Ah
+    mov ax, dx
+    xor dx, dx
+    mov cx, 1000
+    div cx
+    mov bx, dx
 
-SHOW_GREEN:
+    cmp bx, 100
+    jl  PRINT_GREEN
+
+    cmp bx, 500
+    jle PRINT_YELLOW
+
+    jmp PRINT_RED
+
+PRINT_GREEN:
     mov dx, OFFSET msgGreen
-    mov ah, 09h
-    int 21h
-    jmp PRINT_REST
+    jmp PRINT_MSG
 
-SHOW_RED:
+PRINT_YELLOW:
+    mov dx, OFFSET msgYellow
+    jmp PRINT_MSG
+
+PRINT_RED:
     mov dx, OFFSET msgRed
+
+PRINT_MSG:
     mov ah, 09h
     int 21h
 
-PRINT_REST:
-    ; Newline
-    mov ah, 02h
-    mov dl, 0Dh
-    int 21h
-    mov dl, 0Ah
-    int 21h
-
-    ; Print line
-    mov dx, OFFSET line
+    mov dx, OFFSET newline
     mov ah, 09h
     int 21h
 
-    ; Newline
-    mov ah, 02h
-    mov dl, 0Dh
-    int 21h
-    mov dl, 0Ah
-    int 21h
-
-    ; Print wait message
-    mov dx, OFFSET waitMsg
-    mov ah, 09h
-    int 21h
-
-    ; Newline
-    mov ah, 02h
-    mov dl, 0Dh
-    int 21h
-    mov dl, 0Ah
-    int 21h
-
-    CALL DELAY3SEC
+    CALL DELAY1SEC
     jmp START
 
 MAIN ENDP
 
-; -----------------------------
-; Delay for 3 seconds
-; -----------------------------
-DELAY3SEC PROC
-    mov cx, 3           ; 3 iterations
-delay_loop:
-    CALL ONE_SECOND_DELAY
-    loop delay_loop
-    ret
-DELAY3SEC ENDP
-
-; -----------------------------
-; Delay for ~1 second
-; -----------------------------
-ONE_SECOND_DELAY PROC
-    PUSH CX             ; Save outer loop counter
-    
-    mov cx, 40h         ; Adjust for speed
+DELAY1SEC PROC
+    mov cx, 40h
 outer:
     mov dx, 0FFFFh
 inner:
     dec dx
     jnz inner
     loop outer
-        
-    POP CX              ; Restore outer loop counter
     ret
-ONE_SECOND_DELAY ENDP
+DELAY1SEC ENDP
 
 END MAIN
